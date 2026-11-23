@@ -87,6 +87,7 @@ struct Notebook: Codable, Equatable, Sendable, Identifiable {
 }
 
 struct MemoSummary: Codable, Equatable, Sendable, Identifiable {
+    var taskProgress: TaskProgress? = nil
     var id: String
     var notebookId: String
     var title: String?
@@ -129,6 +130,7 @@ struct MemoDetail: Codable, Equatable, Sendable, Identifiable {
 
     func asSummary() -> MemoSummary {
         MemoSummary(
+            taskProgress: TaskProgress.parse(contentMarkdown),
             id: id,
             notebookId: notebookId,
             title: title,

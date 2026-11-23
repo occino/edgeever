@@ -4,13 +4,13 @@ import {
   isSyncMetadataInitialized,
   splitSyncBootstrapWriteBatches,
   type MemoDetail,
-  type MemoSummary,
   type Notebook,
   type TagSummary,
 } from "@edgeever/shared";
 import * as SQLite from "expo-sqlite";
 import { serializeMobileDatabaseWrites } from "./mobile-database-access";
 import { filterLocalMemosByExactTag, summarizeMobileTags } from "./mobile-tags";
+import { toMemoSummary } from "./memo-summary";
 
 const DATABASE_NAME = "edgeever-mobile.db";
 const BOOTSTRAP_PAGE_SIZE = 200;
@@ -438,18 +438,3 @@ const setSyncIdentity = (db: Pick<SQLite.SQLiteDatabase, "runAsync">, scope: str
     scope,
     identity
   );
-
-const toMemoSummary = (memo: MemoDetail): MemoSummary => ({
-  id: memo.id,
-  notebookId: memo.notebookId,
-  title: memo.title,
-  excerpt: memo.excerpt,
-  tags: memo.tags,
-  isPinned: memo.isPinned,
-  isArchived: memo.isArchived,
-  isDeleted: memo.isDeleted,
-  revision: memo.revision,
-  createdAt: memo.createdAt,
-  updatedAt: memo.updatedAt,
-  deletedAt: memo.deletedAt,
-});
