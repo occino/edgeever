@@ -1,0 +1,119 @@
+name: Build Windows app (fork)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fork-windows-build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  windows:
+    # This fork-specific build entry point is separate from upstream release jobs.
+    if: github.repository == 'occino/edgeever'
+    name: Windows x64 installer
+    runs-on: windows-latest
+    timeout-minutes: 45
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      EDGE_EVER_DESKTOP_ARCH: x64
+      EDGE_EVER_DESKTOP_TARGET: win
+      EDGE_EVER_DESKTOP_BUILD: "1"
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies and builds
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~\.cargo\registry
+            ~\.cargo\git
+            crates\desktop-sidecar\target
+          key: fork-windows-x64-rust-${{ hashFiles('crates/desktop-sidecar/Cargo.lock', 'crates/desktop-sidecar/**/*.rs', '.cargo/config.toml') }}
+          restore-keys: fork-windows-x64-rust-
+
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          for ($attempt = 1; $attempt -le 3; $attempt++) {
+            bun install --frozen-lockfile
+            $installExitCode = $LASTEXITCODE
+            if ($installExitCode -eq 0) { exit 0 }
+            if ($attempt -eq 3) { exit $installExitCode }
+            Start-Sleep -Seconds (15 * $attempt)
+          }
+
+      - name: Typecheck Web and API
+        run: bun run typecheck
+
+      - name: Typecheck Android
+        run: bun run typecheck:mobile
+
+      - name: Test Rust sidecar
+        run: cargo test --manifest-path crates/desktop-sidecar/Cargo.toml
+
+      - name: Test ACP process cleanup
+        run: bun test --cwd apps/desktop src/main/acp-cleanup.test.mjs
+
+      - name: Build Web renderer
+        run: bun run build:web
+
+      - name: Build Windows Rust sidecar
+        run: bun run build:desktop:sidecar
+
+      - name: Package unsigned installer
+        run: bun scripts/run-desktop-builder.mjs --publish never
+
+      - name: Verify package contents and architecture
+        env:
+          EDGE_EVER_VERIFY_TARGET: win32
+        run: bun run verify:desktop-package
+
+      - name: Test packaged sidecar
+        shell: pwsh
+        run: |
+          $env:EDGE_EVER_SIDECAR_PATH = (Resolve-Path 'release/desktop/win-unpacked/resources/sidecar/edgeever-sidecar.exe').Path
+          $env:EDGE_EVER_MIGRATIONS_PATH = (Resolve-Path 'release/desktop/win-unpacked/resources/migrations').Path
+          bun scripts/test-desktop-sidecar.mjs
+
+      - name: Verify packaged app startup
+        run: bun run verify:packaged-desktop-startup -- release/desktop/win-unpacked/EdgeEver.exe
+
+      - name: Create checksum and build information
+        shell: pwsh
+        run: |
+          $version = (Get-Content apps/desktop/package.json | ConvertFrom-Json).version
+          $installer = Get-Item "release/desktop/EdgeEver-$version-windows-x64.exe"
+          $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $installer.FullName).Hash.ToLowerInvariant()
+          "$hash  $($installer.Name)" | Set-Content -Encoding ascii release/desktop/SHA256SUMS-windows.txt
+          @(
+            "Repository: $env:GITHUB_REPOSITORY",
+            "Commit: $env:GITHUB_SHA",
+            "Run: $env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID",
+            "Unsigned local-build installer. Not a formal release."
+          ) | Set-Content -Encoding utf8 release/desktop/BUILD-INFO.txt
+
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v6
+        with:
+          name: edgeever-windows-x64-${{ github.sha }}
+          path: |
+            release/desktop/EdgeEver-*-windows-x64.exe
+            release/desktop/SHA256SUMS-windows.txt
+            release/desktop/BUILD-INFO.txt
+          if-no-files-found: error
+          retention-days: 14
