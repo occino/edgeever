@@ -84,3 +84,5 @@ export * from "./infographic-operations";
 
 export * from "./resource-media";
 export * from "./publish-image";
+
+export * from "./task-progress";

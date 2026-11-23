@@ -2613,6 +2613,7 @@ export const enUS = {
     manualSyncOffline: "Cannot sync notes while offline",
   },
   memoCard: {
+    taskProgress: "{{checked}} of {{total}} tasks completed",
     yesterday: "Yesterday",
     createdAt: "Created {{time}}",
     updatedAt: "Updated {{time}}",

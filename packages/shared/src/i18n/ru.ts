@@ -2632,6 +2632,7 @@ export const ru = {
     manualSyncOffline: "Нельзя синхронизировать без сети",
   },
   memoCard: {
+    taskProgress: "Выполнено задач: {{checked}} из {{total}}",
     yesterday: "Вчера",
     createdAt: "Создано {{time}}",
     updatedAt: "Обновлено {{time}}",

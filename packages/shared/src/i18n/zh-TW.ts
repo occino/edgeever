@@ -2632,6 +2632,7 @@ export const zhTW = {
     manualSyncOffline: "離線時無法同步筆記",
   },
   memoCard: {
+    taskProgress: "已完成 {{checked}} / {{total}} 項任務",
     yesterday: "昨天",
     createdAt: "建立 {{time}}",
     updatedAt: "更新 {{time}}",

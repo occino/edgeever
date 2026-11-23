@@ -36,6 +36,7 @@ export type MemoSummary = {
   diagramPreview?: DiagramSummaryPreview;
   structuredTable?: boolean;
   tablePreview?: TableSummaryPreview;
+  taskProgress?: { checked: number; total: number };
   infographic?: boolean;
   poster?: boolean;
   videoNote?: boolean;

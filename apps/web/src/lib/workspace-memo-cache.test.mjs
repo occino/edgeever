@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { QueryClient } from "@tanstack/react-query";
 import {
+  memoToSummary,
   applyMemoRemovalToCache,
   clearTrashMemoLists,
   evictIdleMemoDetails,
@@ -9,6 +10,8 @@ import {
   snapshotMemoRemovalCache,
   snapshotTrashClearCache,
 } from "./workspace-memo-cache.ts";
+
+import { updateMemoSummaryInLists } from "./memo-list-cache.ts";
 
 const memo = (id, notebookId, isDeleted = false) => ({
   id,
@@ -135,5 +138,20 @@ describe("idle memo detail eviction", () => {
 
     evictIdleMemoDetails(queryClient, "memo_open");
     expect(removed).toEqual([["memo", "memo_old", "notebook"]]);
+  });
+});
+
+describe("memo task progress cache", () => {
+  test("recomputes progress on save and removes it when the last task is removed", () => {
+    const detail = { ...memo("tasks", "nb-1"), contentText: "", contentMarkdown: "- [x] done\n- [ ] pending" };
+    const client = new QueryClient();
+    const key = ["memos", "notebook", "nb-1"];
+    client.setQueryData(key, { pages: [{ memos: [memoToSummary(detail)], nextCursor: null }], pageParams: [null] });
+    const progress = () => client.getQueryData(key).pages[0].memos[0].taskProgress;
+    expect(progress()).toEqual({ checked: 1, total: 2 });
+    updateMemoSummaryInLists(client, memoToSummary({ ...detail, contentMarkdown: "- [x] done\n- [x] pending" }));
+    expect(progress()).toEqual({ checked: 2, total: 2 });
+    updateMemoSummaryInLists(client, memoToSummary({ ...detail, contentMarkdown: "No tasks" }));
+    expect(progress()).toBeUndefined();
   });
 });
