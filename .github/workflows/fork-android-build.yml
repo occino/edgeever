@@ -1,0 +1,119 @@
+name: Build Android app (fork)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fork-android-build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  android:
+    if: github.repository == 'occino/edgeever'
+    name: Android arm64 test APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CI: "1"
+      # Public Expo template test certificate; never an official release signer.
+      EDGE_EVER_ANDROID_ALLOWED_SIGNER_SHA256: fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c
+      ANDROID_KEYSTORE_PASSWORD: android
+      ANDROID_KEY_ALIAS: androiddebugkey
+      ANDROID_KEY_PASSWORD: android
+      EDGE_EVER_ANDROID_APK_ARCHS: arm64-v8a
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android build tools
+        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck Web and API
+        run: bun run typecheck
+
+      - name: Typecheck Android
+        run: bun run typecheck:mobile
+
+      - name: Test fork configuration and task progress
+        run: bun test scripts/prepare-fork-android.test.mjs apps/mobile/src/screens/workspace-memo-cache.test.ts packages/shared/src/task-progress.test.mjs
+
+      - name: Build Web
+        run: bun run build:web
+
+      - name: Prepare isolated test app configuration
+        run: node scripts/prepare-fork-android.mjs
+
+      - name: Prepare public test signing key
+        run: |
+          template="$(node -p "require('path').join(require('path').dirname(require.resolve('expo/package.json', { paths: ['./apps/mobile'] })), 'template.tgz')")"
+          tar -xOf "$template" package/android/app/debug.keystore > "$RUNNER_TEMP/expo-debug.keystore"
+          keytool -importkeystore -noprompt \
+            -srckeystore "$RUNNER_TEMP/expo-debug.keystore" -srcstorepass android \
+            -srcalias androiddebugkey -srckeypass android \
+            -destkeystore "$RUNNER_TEMP/fork-test.p12" -deststoretype PKCS12 \
+            -deststorepass android -destkeypass android
+          echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/fork-test.p12" >> "$GITHUB_ENV"
+
+      - name: Build and verify test APK
+        run: bun run build:android:apk
+
+      - name: Verify test identity and stage APK
+        run: |
+          mkdir -p release/android-test
+          apk=apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+          "$ANDROID_HOME/build-tools/36.0.0/aapt2" dump badging "$apk" > "$RUNNER_TEMP/apk-badging.txt"
+          grep -q "^package: name='org.edgeever.mobile.occino.test'" "$RUNNER_TEMP/apk-badging.txt"
+          grep -q "^native-code: 'arm64-v8a'[[:space:]]*$" "$RUNNER_TEMP/apk-badging.txt"
+          cp "$apk" "release/android-test/EdgeEver-Test-android-arm64-$GITHUB_RUN_NUMBER.apk"
+          cd release/android-test
+          sha256sum ./*.apk > SHA256SUMS.txt
+          {
+            echo "Repository: $GITHUB_REPOSITORY"
+            echo "Commit: $GITHUB_SHA"
+            echo "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            echo "Package: org.edgeever.mobile.occino.test"
+            echo "Public test signer: $EDGE_EVER_ANDROID_ALLOWED_SIGNER_SHA256"
+            echo "Test APK only. Not a Play-signed release."
+          } > BUILD-INFO.txt
+
+      - name: Upload test APK
+        uses: actions/upload-artifact@v6
+        with:
+          name: edgeever-android-arm64-test-${{ github.sha }}-${{ github.run_number }}
+          path: release/android-test/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Remove temporary signing files
+        if: always()
+        run: rm -f "$RUNNER_TEMP/expo-debug.keystore" "$RUNNER_TEMP/fork-test.p12"
