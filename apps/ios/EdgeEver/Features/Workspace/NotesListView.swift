@@ -591,13 +591,6 @@ struct MemoCardContent: View {
                 Text("\(timestampLabel) \(MemoPreviewDate.format(timestampField.value(from: memo), locale: locale, isEnglish: isEnglish, language: language))")
                     .font(AppTheme.memoDateFont)
                     .foregroundStyle(AppTheme.meta)
-                if let progress = memo.taskProgress, progress.total > 0 {
-                    Text("☑ \(progress.checked)/\(progress.total)")
-                        .font(AppTheme.memoDateFont)
-                        .monospacedDigit()
-                        .foregroundStyle(AppTheme.meta)
-                        .accessibilityLabel(taskProgressLabel(progress))
-                }
                 ForEach(Array(memo.tags.prefix(3)), id: \.self) { tag in
                     Text("#\(tag)")
                         .font(AppTheme.tagFont)
@@ -611,15 +604,6 @@ struct MemoCardContent: View {
             .padding(.top, density.metaTop)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func taskProgressLabel(_ progress: TaskProgress) -> String {
-        switch language {
-        case .japanese: return "\(progress.total) 件中 \(progress.checked) 件のタスクが完了"
-        case .polish: return "Ukończono \(progress.checked) z \(progress.total) zadań"
-        case .english: return "\(progress.checked) of \(progress.total) tasks completed"
-        case .chinese: return "已完成 \(progress.checked) / \(progress.total) 项任务"
-        }
     }
 
     private var displayTitle: String {

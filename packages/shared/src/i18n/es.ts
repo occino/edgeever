@@ -2818,7 +2818,6 @@ export const es = {
     "manualSyncOffline": "No se pueden sincronizar notas sin conexión"
   },
   "memoCard": {
-    "taskProgress": "{{checked}} de {{total}} tareas completadas",
     "yesterday": "Ayer",
     "createdAt": "Creada {{time}}",
     "updatedAt": "Actualizada {{time}}",

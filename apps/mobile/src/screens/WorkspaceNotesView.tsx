@@ -447,9 +447,6 @@ const MemoCard = memo(function MemoCard({
   const listTimestampKind = listTimestamp.field === "createdAt"
     ? getMobileCatalog(resolvedLocale).mobile.notes.created
     : getMobileCatalog(resolvedLocale).mobile.notes.updated;
-  const progress = memo.taskProgress && memo.taskProgress.total > 0 ? memo.taskProgress : undefined;
-  const progressLabel = progress ? getMobileCatalog(resolvedLocale).memoCard.taskProgress
-    .replace("{{checked}}", String(progress.checked)).replace("{{total}}", String(progress.total)) : undefined;
   const handledLongPressRef = useRef(false);
   const rightClickGesture = Gesture.Tap()
     .mouseButton(MouseButton.RIGHT)
@@ -481,7 +478,7 @@ const MemoCard = memo(function MemoCard({
         ) : null}
         <Pressable
           accessibilityHint={selectionMode ? undefined : getMobileCatalog(resolvedLocale).mobile.notes.selectHint}
-          accessibilityLabel={progressLabel ? `${memoTitle}, ${progressLabel}` : memoTitle}
+          accessibilityLabel={memoTitle}
           accessibilityRole="button"
           delayLongPress={520}
           onLongPress={onLongPress ? () => {
@@ -512,7 +509,6 @@ const MemoCard = memo(function MemoCard({
           ) : null}
           <View style={[styles.memoMeta, listDensity === "compact" && styles.memoMetaCompact]}>
             <Text style={styles.memoDate}>{listTimestampKind} {listTimestampLabel}</Text>
-            {progress ? <Text accessibilityLabel={progressLabel} style={styles.memoDate}>☑ {progress.checked}/{progress.total}</Text> : null}
             {memo.tags.slice(0, 3).map((tag) => (
               <Text key={tag} style={styles.tag}>
                 #{tag}

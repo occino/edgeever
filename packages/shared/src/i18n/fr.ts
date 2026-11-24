@@ -2818,7 +2818,6 @@ export const fr = {
     manualSyncOffline: "Impossible de synchroniser les notes hors ligne"
   },
   memoCard: {
-    taskProgress: "{{checked}} tâches terminées sur {{total}}",
     yesterday: "Hier",
     createdAt: "Créée {{time}}",
     updatedAt: "Modifiée {{time}}",

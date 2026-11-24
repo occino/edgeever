@@ -195,23 +195,3 @@ describe("memo list service", () => {
     expect(database.calls[0].parameters).toContain("%---%");
   });
 });
-
-describe("memo task progress", () => {
-  test("projects progress from full content, independent of the excerpt", () => {
-    expect(mapMemoSummary(memoRow("memo-1", {
-      content_markdown: "Intro\n\n- [x] done\n- [ ] pending", excerpt: "Intro",
-    })).taskProgress).toEqual({ checked: 1, total: 2 });
-    expect(mapMemoSummary(memoRow("memo-1", { content_markdown: "No tasks" })).taskProgress).toBeUndefined();
-  });
-
-  test("does not add database reads for task progress across pages", async () => {
-    const db = createDatabase({ rows: Array.from({ length: 3 }, (_, i) => memoRow(`memo-${i + 1}`, {
-      content_markdown: "- [x] done\n- [ ] pending",
-    })) });
-    const first = await listMemos(db, { workspaceId: "ws", limit: 2, includeTotal: false });
-    expect(first.memos.map(memo => memo.taskProgress)).toEqual([{ checked: 1, total: 2 }, { checked: 1, total: 2 }]);
-    expect(db.calls).toHaveLength(1);
-    await listMemos(db, { workspaceId: "ws", limit: 2, includeTotal: false, cursor: first.nextCursor });
-    expect(db.calls).toHaveLength(2);
-  });
-});

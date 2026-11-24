@@ -2621,7 +2621,6 @@ export const pl = {
     manualSyncOffline: "Nie można synchronizować notatek w trybie offline",
   },
   memoCard: {
-    taskProgress: "Ukończono {{checked}} z {{total}} zadań",
     yesterday: "Wczoraj",
     createdAt: "Utworzono {{time}}",
     updatedAt: "Zaktualizowano {{time}}",

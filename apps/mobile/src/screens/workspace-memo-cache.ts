@@ -1,6 +1,5 @@
 import { type InfiniteData, type QueryClient } from "@tanstack/react-query";
 import type { MemoDetail, MemoSummary, Notebook, TiptapDoc } from "@edgeever/shared";
-import { toMemoSummary } from "../lib/memo-summary";
 import { listLocalMemos } from "../lib/local-mirror";
 import { memoHasExactTag } from "../lib/mobile-tags";
 import { markdownToLocalText, sortMemoSummaries } from "./workspace-utils";
@@ -81,7 +80,6 @@ export const memoMatchesListQuery = (memo: MemoSummary, queryKey: readonly unkno
 };
 
 export const applyOptimisticMemoToCache = (queryClient: QueryClient, previousMemo: MemoDetail, nextMemo: MemoDetail) => {
-  const nextSummary = toMemoSummary(nextMemo);
   const detailQueries = queryClient.getQueryCache().findAll({ queryKey: ["mobile", "memo"] });
 
   for (const query of detailQueries) {
@@ -103,7 +101,7 @@ export const applyOptimisticMemoToCache = (queryClient: QueryClient, previousMem
     const nextMatches = memoMatchesListQuery(nextMemo, query.queryKey);
     const flattened = data.pages.flatMap((page) => page.memos);
     const withoutMemo = flattened.filter((memo) => memo.id !== nextMemo.id && memo.id !== previousMemo.id);
-    const nextMemos = nextMatches ? sortMemoSummaries([nextSummary, ...withoutMemo], query.queryKey[5]) : withoutMemo;
+    const nextMemos = nextMatches ? sortMemoSummaries([nextMemo, ...withoutMemo], query.queryKey[5]) : withoutMemo;
     const previousTotal = data.pages[0].totalCount;
     const totalCount = previousTotal === undefined ? undefined : Math.max(0, previousTotal + (nextMatches ? 1 : 0) - (previouslyMatched ? 1 : 0));
     let cursor = 0;
@@ -125,7 +123,7 @@ export const applyOptimisticMemoToCache = (queryClient: QueryClient, previousMem
         ...data,
         pages: data.pages.map((page) => ({
           ...page,
-          memos: page.memos.map((memo) => (memo.id === nextMemo.id || memo.id === previousMemo.id ? nextSummary : memo)),
+          memos: page.memos.map((memo) => (memo.id === nextMemo.id || memo.id === previousMemo.id ? nextMemo : memo)),
         })),
       });
     }

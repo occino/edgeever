@@ -8,9 +8,6 @@ options:
   developmentLanguage: en
   xcodeVersion: "16.0"
 packages:
-  Markdown:
-    url: https://github.com/swiftlang/swift-markdown
-    exactVersion: 0.9.0
   GRDB:
     url: https://github.com/groue/GRDB.swift
     from: 7.0.0
@@ -63,8 +60,6 @@ targets:
         excludes:
           - assets
     dependencies:
-      - package: Markdown
-        product: Markdown
       - package: GRDB
         product: GRDB
       - package: Pow

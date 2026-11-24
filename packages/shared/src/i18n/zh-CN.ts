@@ -2632,7 +2632,6 @@ export const zhCN = {
     manualSyncOffline: "离线时无法同步笔记",
   },
   memoCard: {
-    taskProgress: "已完成 {{checked}} / {{total}} 项任务",
     yesterday: "昨天",
     createdAt: "创建 {{time}}",
     updatedAt: "更新 {{time}}",

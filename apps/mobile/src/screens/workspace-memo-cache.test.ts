@@ -1,8 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { QueryClient } from "@tanstack/react-query";
-import { toMemoSummary } from "../lib/memo-summary";
 import type { MemoDetail } from "@edgeever/shared";
-import { applyOptimisticMemoToCache, createOptimisticMemo, memoMatchesListQuery, memoQueriesShareScope } from "./workspace-memo-cache";
+import { createOptimisticMemo, memoMatchesListQuery, memoQueriesShareScope } from "./workspace-memo-cache";
 
 const memo: MemoDetail = {
   id: "memo_1",
@@ -81,31 +79,4 @@ describe("memoQueriesShareScope", () => {
   test("drops previous results when switching notebooks", () => {
     expect(memoQueriesShareScope("memos", listKey("parent", ["parent"]), listKey("other", ["other"]))).toBe(false);
   });
-});
-
-
-test("task progress survives local summaries and updates list and search caches", () => {
-  const client = new QueryClient();
-  const listKey = ["mobile", "memos", "notebook", "all", "all", "updated-desc", []];
-  const searchKey = ["mobile", "search", "notebook", "Original"];
-  for (const key of [listKey, searchKey]) {
-    client.setQueryData(key, { pages: [{ memos: [memo], totalCount: 1 }], pageParams: [0] });
-  }
-  let previous = memo;
-  for (const [markdown, expected] of [
-    ["- [ ] first\n- [ ] second", { checked: 0, total: 2 }],
-    ["- [x] first\n- [ ] second", { checked: 1, total: 2 }],
-    ["- [x] first\n- [x] second", { checked: 2, total: 2 }],
-    ["No tasks remain", undefined],
-  ] as const) {
-    const next = createOptimisticMemo(previous, { contentMarkdown: markdown });
-    expect(toMemoSummary(next).taskProgress).toEqual(expected);
-    applyOptimisticMemoToCache(client, previous, next);
-    for (const key of [listKey, searchKey]) {
-      const data = client.getQueryData<{ pages: { memos: MemoDetail[] }[] }>(key);
-      expect(data?.pages[0]?.memos[0]?.taskProgress).toEqual(expected);
-    }
-    previous = next;
-  }
-  client.clear();
 });

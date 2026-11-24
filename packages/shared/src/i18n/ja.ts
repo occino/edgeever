@@ -2621,7 +2621,6 @@ export const ja = {
     manualSyncOffline: "オフラインではノートを同期できません",
   },
   memoCard: {
-    taskProgress: "{{total}} 件中 {{checked}} 件のタスクが完了",
     yesterday: "昨日",
     createdAt: "作成 {{time}}",
     updatedAt: "更新 {{time}}",

@@ -2818,7 +2818,6 @@ export const de = {
     "manualSyncOffline": "Notizen können offline nicht synchronisiert werden"
   },
   "memoCard": {
-    "taskProgress": "{{checked}} von {{total}} Aufgaben erledigt",
     "yesterday": "Gestern",
     "createdAt": "Erstellt {{time}}",
     "updatedAt": "Aktualisiert {{time}}",

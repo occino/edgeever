@@ -1,41 +1,21 @@
 services:
   edgeever:
-    # Build and start the checked-out fork: docker compose up -d --build
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: edgeever-local:latest
-    pull_policy: build
-    container_name: edgeever
+    image: "${EDGE_EVER_IMAGE:-ghcr.io/tianma-if/edgeever}:${EDGE_EVER_VERSION:-latest}"
     restart: unless-stopped
-    env_file:
-      # Local credentials; excluded from Git and the Docker build context.
-      - .env.stack
     init: true
+    ports:
+      - "${EDGE_EVER_PORT:-8787}:8787"
     environment:
-      TZ: Europe/Berlin
-      EDGE_EVER_CONTAINER_IMAGE: edgeever-local
+      EDGE_EVER_AUTH_USERNAME: "${EDGE_EVER_AUTH_USERNAME:-admin}"
+      EDGE_EVER_AUTH_PASSWORD: "${EDGE_EVER_AUTH_PASSWORD:?Set EDGE_EVER_AUTH_PASSWORD before starting EdgeEver}"
+      EDGE_EVER_CONTAINER_IMAGE: "${EDGE_EVER_IMAGE:-ghcr.io/tianma-if/edgeever}"
     volumes:
-      - /home/nico/volumes/edgeever:/data
+      - edgeever-data:/data
     security_opt:
       - no-new-privileges:true
     cap_drop:
       - ALL
     stop_grace_period: 30s
-    labels:
-      - traefik.enable=true
-      - traefik.docker.network=proxy
-      - traefik.http.routers.edgeever-router.rule=Host(`edgeever.nico-nostheide.de`)
-      - traefik.http.routers.edgeever-router.tls=true
-      - traefik.http.routers.edgeever-router.entrypoints=websecure
-      - traefik.http.routers.edgeever-router.tls.certresolver=myresolver
-      - traefik.http.routers.edgeever-router.service=edgeever-srv
-      - traefik.http.services.edgeever-srv.loadbalancer.server.port=8787
-      - traefik.http.services.edgeever-srv.loadbalancer.server.scheme=http
-      - com.centurylinklabs.watchtower.enable=false
-    networks:
-      - proxy
 
-networks:
-  proxy:
-    external: true
+volumes:
+  edgeever-data:

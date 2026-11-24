@@ -332,15 +332,6 @@ export const MemoCard = ({
     onOpenKeyboardContextMenu(event.currentTarget);
   };
 
-  const taskProgress = memo.taskProgress && memo.taskProgress.total > 0 ? (
-    <span
-      className="shrink-0 whitespace-nowrap text-xs font-semibold tabular-nums text-slate-500"
-      role="img"
-      aria-label={t("memoCard.taskProgress", { checked: memo.taskProgress.checked, total: memo.taskProgress.total })}
-    >
-      <span aria-hidden="true">☑ {memo.taskProgress.checked}/{memo.taskProgress.total}</span>
-    </span>
-  ) : null;
   const compact = listDensity === "compact";
   const listTime = (
     <time
@@ -381,7 +372,6 @@ export const MemoCard = ({
         {memo.isPinned && <Star className="h-3.5 w-3.5 shrink-0 fill-amber-400 text-amber-500" />}
         {CompactTypeIcon && <CompactTypeIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" aria-hidden="true" />}
         <span className="min-w-0 flex-1 truncate">{memoTitle}</span>
-        {taskProgress}
         {listTime}
       </div>
       <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs leading-5 text-slate-500">
@@ -519,7 +509,6 @@ export const MemoCard = ({
           )}
           <div className="mt-3.5 flex flex-wrap items-center gap-2">
             {listTime}
-            {taskProgress}
             {memo.tags.slice(0, 3).map((tag) => (
               <span
                 key={tag}

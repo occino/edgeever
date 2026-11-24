@@ -1,8 +1,7 @@
-//! List-row metadata for diagram, infographic, table, and task notes.
-//! This follows the shared web summary helpers, including `getTaskProgress`,
+//! List-row metadata for diagram, infographic, and table notes.
+//! This follows `getDiagramSummary`, `getInfographicSummary`, and `getTableSummary`
 //! so desktop cards match the web list without returning the document payload.
 
-use pulldown_cmark::{Event, Options, Parser};
 use serde_json::{json, Map, Value};
 use std::collections::{HashMap, HashSet};
 
@@ -33,9 +32,6 @@ struct SummaryEdge {
 
 pub(crate) fn note_list_metadata(markdown: &str) -> Value {
     let mut metadata = Map::new();
-    if let Some(progress) = task_progress(markdown) {
-        metadata.insert("taskProgress".to_owned(), progress);
-    }
     match diagram_preview(markdown) {
         Some(preview) => {
             metadata.insert("diagramKind".to_owned(), json!(preview.kind));
@@ -74,40 +70,6 @@ pub(crate) fn note_list_metadata(markdown: &str) -> Value {
         }
     }
     Value::Object(metadata)
-}
-
-fn task_progress(markdown: &str) -> Option<Value> {
-    if !markdown.contains('[') {
-        return None;
-    }
-    let normalized = markdown.replace("\r\n", "\n").replace('\r', "\n");
-    let mut body = normalized.as_str();
-    // Match the web's leading, closed property header. A horizontal rule
-    // followed by ordinary Markdown must remain part of the document.
-    let header = body.trim_start_matches('\u{feff}');
-    if let Some((first, rest)) = header.split_once('\n') {
-        if first.trim_end_matches([' ', '\t']) == "---" {
-            let mut offset = 0;
-            for line in rest.split_inclusive('\n') {
-                if matches!(line.trim_end_matches([' ', '\t', '\n']), "---" | "...") {
-                    if rest[..offset].contains(':') {
-                        body = &rest[offset + line.len()..];
-                    }
-                    break;
-                }
-                offset += line.len();
-            }
-        }
-    }
-    let mut checked = 0;
-    let mut total = 0;
-    for event in Parser::new_ext(body, Options::ENABLE_TASKLISTS) {
-        if let Event::TaskListMarker(done) = event {
-            total += 1;
-            checked += usize::from(done);
-        }
-    }
-    (total > 0).then(|| json!({ "checked": checked, "total": total }))
 }
 
 fn is_infographic(markdown: &str) -> bool {

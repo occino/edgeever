@@ -7,7 +7,6 @@ import {
   getInfographicSummary,
   getPosterSummary,
   getTableSummary,
-  getTaskProgress,
   type MemoSummary,
 } from "@edgeever/shared";
 import { clampNumber, parseJsonArray } from "./entity-utils";
@@ -86,7 +85,6 @@ export const mapMemoSummary = (row: MemoSummaryRow): MemoSummary => ({
   ...getPosterSummary(row.content_markdown),
   ...(row.is_poster !== undefined ? { poster: Boolean(row.is_poster) } : {}),
   ...getTableSummary(row.content_markdown),
-  taskProgress: getTaskProgress(row.content_markdown),
   tags: parseJsonArray(row.tags_json),
   isPinned: Boolean(row.is_pinned),
   isArchived: Boolean(row.is_archived),

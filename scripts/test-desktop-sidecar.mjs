@@ -8,7 +8,6 @@ import { join } from "node:path";
 import { createDefaultDiagramDocument, getDiagramSummary, serializeDiagramDocument } from "../packages/shared/src/diagram.ts";
 import { createDefaultInfographicDocument, getInfographicSummary, serializeInfographicDocument } from "../packages/shared/src/infographic.ts";
 import { createDefaultTableDocument, getTableSummary, serializeTableDocument } from "../packages/shared/src/table.ts";
-import { getTaskProgress } from "../packages/shared/src/task-progress.ts";
 
 const sidecarPath = process.env.EDGE_EVER_SIDECAR_PATH ?? join(process.cwd(), "crates/desktop-sidecar/target/debug/edgeever-sidecar");
 const migrationsPath = process.env.EDGE_EVER_MIGRATIONS_PATH ?? join(process.cwd(), "migrations");
@@ -226,9 +225,7 @@ const assertListMetadata = async (title, markdown) => {
   assert.equal(listed.infographic, expected.infographic, title);
   assert.equal(listed.structuredTable, expected.structuredTable, title);
   assert.deepEqual(listed.tablePreview, expected.tablePreview, title);
-  assert.deepEqual(listed.taskProgress, getTaskProgress(markdown), `${title} task progress must match the web`);
   assert.equal(Object.hasOwn(listed, "contentMarkdown"), false, `${title} list row must not include the document payload`);
-  return created.memo;
 };
 await assertListMetadata("Infographic list icon", serializeInfographicDocument({
   schemaVersion: 1,
@@ -241,22 +238,6 @@ await assertListMetadata("Flowchart list icon", serializeDiagramDocument(createD
 await assertListMetadata("Architecture list icon", serializeDiagramDocument(createDefaultDiagramDocument("architecture")));
 await assertListMetadata("Table list icon", serializeTableDocument(createDefaultTableDocument()));
 await assertListMetadata("Broken infographic list icon", "<!-- edgeever-infographic-v1:broken -->");
-for (const [name, markdown] of Object.entries({
-  nested: "- [x] parent\n  - [ ] child\n  - [x] child\n- [ ] sibling\n- [X] uppercase",
-  quoted: "> - [x] quoted\n\n- [ ] real\n\n```md\n- [x] example\n```",
-  properties: "---\nexample:\n  - [x] metadata\n---\n\n- [ ] real\r\n- [X] done",
-  propertiesDots: "\uFEFF---\nexample:\n  - [x] metadata\n...\n- [ ] real",
-  legacyProperties: "```edgeever-frontmatter\nexample:\n  - [x] metadata\n```\n- [ ] real",
-  code: "`- [x] inline code`\n\n    - [x] indented code\n\n~~~md\n- [ ] fenced\n~~~",
-  prose: "text [x] inline\n\n- ordinary list\n\n<!--\n- [x] hidden\n-->",
-  ordered: "1. [ ] first\n2. [X] second",
-  unchecked: "- [ ] first\n- [ ] second",
-  completed: "- [x] first\n- [x] second",
-  horizontalRules: "---\n- [x] real task\n\n---\n- [ ] another task",
-})) {
-  const memo = await assertListMetadata(`Task progress ${name}`, markdown);
-  await request("memo.delete", { memoId: memo.id, permanent: true });
-}
 await request("memo.create", { notebookId: inbox.id, title: "Local daily", contentMarkdown: "prefix overlap", tags: ["local-daily"] });
 const tagged = await request("memo.list", { tag: "local", limit: 20 });
 assert.deepEqual(tagged.memos.map((memo) => memo.id), [first.memo.id], "tag filter should match an exact tag, not a prefix");
